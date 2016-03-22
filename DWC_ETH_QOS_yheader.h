@@ -72,6 +72,7 @@
 
 /*! History:   
  *      2-March-2016 : Initial 
+ *     21-March-2016 : Corrected Macro value for "DWC_ETH_QOS_Q_GENERIC"
  */
 
 #ifndef __DWC_ETH_QOS__YHEADER__
@@ -411,8 +412,7 @@
 /* Default MTL queue operation mode values */
 #define DWC_ETH_QOS_Q_DISABLED	0x0
 #define DWC_ETH_QOS_Q_AVB 			0x1
-#define DWC_ETH_QOS_Q_DCB 			0x2
-#define DWC_ETH_QOS_Q_GENERIC 	0x3
+#define DWC_ETH_QOS_Q_GENERIC 	0x2
 
 /* Driver PMT macros */
 #define DWC_ETH_QOS_DRIVER_CONTEXT 1

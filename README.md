@@ -1,6 +1,6 @@
 # TOSHIBA_PCIe_EMAC_Driver
-Release Date: 2 March 2016
-Release Version: V_00-05
+Release Date:21 March 2016
+Release Version: V_00-06
 
 
 ===============================================================================
@@ -34,4 +34,4 @@ Supported Features:
 2. Descriptors/Data buffer can be placed in SRAM/Host memory. Default is 
    Descriptors and Data buffer are placed in Host memory.
 3. MAC ID is configurable.
-	
+

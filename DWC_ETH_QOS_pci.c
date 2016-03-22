@@ -72,6 +72,8 @@
 
 /*! History:   
  *      2-March-2016 : Initial 
+ *     21-March-2016 : Modified "pdev->msi_cap + PCI_MSI_MASK_64" register 
+ *                     read as "pci_write_config_dword"
  */
 
 /*!@file: DWC_ETH_QOS_pci.c
@@ -548,7 +550,7 @@ static int DWC_ETH_QOS_probe(struct pci_dev *pdev,
 	NMSGPR_ALERT( "%s:Enable MSI error\n", DEV_NAME);
 	goto err_out_msi_failed;
     }
-    pci_write_config_word(pdev, pdev->msi_cap + PCI_MSI_MASK_64, 0);
+    pci_write_config_dword(pdev, pdev->msi_cap + PCI_MSI_MASK_64, 0);
 #else
     pdata->max_irq = NTN_MAX_MSI;
         ret = pci_enable_msi_range(pdev, pdata->max_irq, pdata->max_irq);

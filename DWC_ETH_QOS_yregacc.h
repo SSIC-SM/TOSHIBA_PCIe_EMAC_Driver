@@ -72,6 +72,8 @@
 
 /*! History:   
  *      2-March-2016 : Initial 
+ *     21-March-2016 : Renamed eMAC TX clock config MACROs, 
+ *                     Added eMAC RX clock config MACROs
  */
 
 #ifndef __DWC_ETH_QOS__REGACC__H__
@@ -29181,22 +29183,37 @@
         (data) = ioread32((void *)NTN_NCLKCTRL_RgOffAddr);\
 } while(0)
 
-/* eMAC clock enable */
-#define NTN_NCLKCTRL_MACCEN_Mask (ULONG)(0x1)
-#define NTN_NCLKCTRL_MACCEN_Wr_Mask (ULONG)(~(0x0080))
+/* eMAC TX clock enable */
+#define NTN_NCLKCTRL_MACTXCEN_Mask (ULONG)(0x1)
+#define NTN_NCLKCTRL_MACTXCEN_Wr_Mask (ULONG)(~(0x0080))
 
-#define NTN_NCLKCTRL_MACCEN_UdfWr(data) do {\
+#define NTN_NCLKCTRL_MACTXCEN_UdfWr(data) do {\
         ULONG v;\
         NTN_NCLKCTRL_RgRd(v);\
-        v = ((v & NTN_NCLKCTRL_MACCEN_Wr_Mask) | ((data & NTN_NCLKCTRL_MACCEN_Mask) << 7));\
+        v = ((v & NTN_NCLKCTRL_MACTXCEN_Wr_Mask) | ((data & NTN_NCLKCTRL_MACTXCEN_Mask) << 7));\
         NTN_NCLKCTRL_RgWr(v);\
 } while(0)
 
-#define NTN_NCLKCTRL_MACCEN_UdfRd(data) do {\
+#define NTN_NCLKCTRL_MACTXCEN_UdfRd(data) do {\
         NTN_NCLKCTRL_RgRd(data);\
-        data = ((data >> 7) & NTN_NCLKCTRL_MACCEN_Mask);\
+        data = ((data >> 7) & NTN_NCLKCTRL_MACTXCEN_Mask);\
 } while(0)
 
+/* eMAC RX clock enable */
+#define NTN_NCLKCTRL_MACRXCEN_Mask (ULONG)(0x1)
+#define NTN_NCLKCTRL_MACRXCEN_Wr_Mask (ULONG)(~(0x4000))
+
+#define NTN_NCLKCTRL_MACRXCEN_UdfWr(data) do {\
+        ULONG v;\
+        NTN_NCLKCTRL_RgRd(v);\
+        v = ((v & NTN_NCLKCTRL_MACRXCEN_Wr_Mask) | ((data & NTN_NCLKCTRL_MACRXCEN_Mask) << 14));\
+        NTN_NCLKCTRL_RgWr(v);\
+} while(0)
+
+#define NTN_NCLKCTRL_MACRXCEN_UdfRd(data) do {\
+        NTN_NCLKCTRL_RgRd(data);\
+        data = ((data >> 7) & NTN_NCLKCTRL_MACTXCEN_Mask);\
+} while(0)
 
 /* Neutrino reset control */
 #define NTN_NRSTCTRL_RgWr(data) do {\

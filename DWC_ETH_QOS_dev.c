@@ -72,6 +72,9 @@
 
 /*! History:   
  *      2-March-2016 : Initial 
+ *     21-March-2016 : Added print message for "configure_mtl_queue" 
+ *                     Moved and modified "DWC_ETH_QOS_yinit"
+ *                     Modified "ntn_mac_clock_config" for RX clock
  */
 
 /*!@file: DWC_ETH_QOS_dev.c
@@ -3721,6 +3724,7 @@ static INT configure_mtl_queue(UINT qInx, struct DWC_ETH_QOS_prv_data *pdata)
 	vy_count = 0;
 	while (1) {
 		if (vy_count > retryCount) {
+			NMSGPR_ALERT("MTL Queue %d init failure\n", qInx);
 			return -Y_FAILURE;
 		} else {
 			vy_count++;
@@ -4115,72 +4119,13 @@ static INT configure_mac(struct DWC_ETH_QOS_prv_data *pdata)
 	return Y_SUCCESS;
 }
 
-/*!
-* \brief Initialises device registers.
-* \details This function initialises device registers.
-*
-* \return none
-*/
-
-static INT DWC_ETH_QOS_yinit(struct DWC_ETH_QOS_prv_data *pdata)
-{
-	UINT qInx, chInx;
-
-	DBGPR("-->DWC_ETH_QOS_yinit\n");
-
-	/* reset mmc counters */
-	MMC_CNTRL_RgWr(0x1);
-
-	for (qInx = 0; qInx < NTN_TX_QUEUE_CNT; qInx++) {
-		if(!pdata->tx_q_for_host[qInx])
-			continue;
-		configure_mtl_queue(qInx, pdata);
-	}
-
-
-#ifdef DWC_ETH_QOS_CERTIFICATION_PKTBURSTCNT
-	/* enable tx drop status */
-	MTL_OMR_DTXSTS_UdfWr(0x1);
-#endif
-
-	configure_mac(pdata);
-
-	DMA_BUSCFG_RgWr(0x0);
-
-	for (chInx = 0; chInx < NTN_TX_DMA_CH_CNT; chInx++) {
-		
-		if(!pdata->tx_dma_ch_for_host[chInx])
-			continue;
-		
-		configure_dma_tx_channel(chInx, pdata);
-	}
-	for (chInx = 0; chInx < NTN_RX_DMA_CH_CNT; chInx++) {
-
-		if(!pdata->rx_dma_ch_for_host[chInx])
-			continue;
-
-		configure_dma_rx_channel(chInx, pdata);
-	}
-
-#ifdef DWC_ETH_QOS_CERTIFICATION_PKTBURSTCNT_HALFDUPLEX
-	MTL_Q0ROMR_FEP_UdfWr(0x1);
-	MAC_MPFR_RA_UdfWr(0x1);
-	MAC_MCR_BE_UdfWr(0x1);
-#endif
-
-	MAC_MPFR_RA_UdfWr(0x1);
-	MAC_MPFR_HPF_UdfWr(0x1);
-
-	DBGPR("<--DWC_ETH_QOS_yinit\n");
-
-	return Y_SUCCESS;
-}
 
 /******************************************************************************/ 
 /**                         Neutrino wrapper registers                       **/  
 /******************************************************************************/
 /*!
-* \brief This function is used to enable or disable the Neutrino GMAC clock
+* \brief This function is used to enable or disable the Neutrino GMAC TX & RX 
+*        clock
 * \param[in] ena_dis, 1=enable, 0=disable
 * \return Success or Failure
 * \retval  0 Success
@@ -4191,15 +4136,26 @@ static INT ntn_mac_clock_config(UINT ena_dis)
 {
     UINT rd_val;
 
-    NTN_NCLKCTRL_MACCEN_UdfWr(ena_dis);
-    NTN_NCLKCTRL_MACCEN_UdfRd(rd_val);
+    NTN_NCLKCTRL_MACTXCEN_UdfWr(ena_dis);
+    NTN_NCLKCTRL_MACTXCEN_UdfRd(rd_val);
     
     if(rd_val != ena_dis)
     {
-        NMSGPR_ALERT( "ERROR: NTN MAC_CLK Bit config error wr_val:0x%x, rd_val:0x%x \n", ena_dis, rd_val);
+        NMSGPR_ALERT( "ERROR: NTN MACTXCEN Bit config error wr_val:0x%x, rd_val:0x%x \n", ena_dis, rd_val);
         return -Y_FAILURE;
     }else{
-        DBGPR("NTN MAC_CLK Bit config : wr_val:0x%x, rd_val:0x%x \n", ena_dis, rd_val);
+        DBGPR("NTN MACTXCEN Bit config : wr_val:0x%x, rd_val:0x%x \n", ena_dis, rd_val);
+    }    
+	
+    NTN_NCLKCTRL_MACRXCEN_UdfWr(ena_dis);
+    NTN_NCLKCTRL_MACRXCEN_UdfRd(rd_val);
+    
+    if(rd_val != ena_dis)
+    {
+        NMSGPR_ALERT( "ERROR: NTN MACRXCEN Bit config error wr_val:0x%x, rd_val:0x%x \n", ena_dis, rd_val);
+        return -Y_FAILURE;
+    }else{
+        DBGPR("NTN MACRXCEN Bit config : wr_val:0x%x, rd_val:0x%x \n", ena_dis, rd_val);
         return Y_SUCCESS;
     }    
 }
@@ -4375,6 +4331,71 @@ static INT ntn_set_tx_clk_2_5MHz(void)
 	return Y_SUCCESS;
 }
 
+/*!
+ * * \brief Initialises device registers.
+ * * \details This function initialises device registers.
+ * *
+ * * \return none
+ * */
+
+static INT DWC_ETH_QOS_yinit(struct DWC_ETH_QOS_prv_data *pdata)
+{
+        UINT qInx, chInx;
+
+        DBGPR("-->DWC_ETH_QOS_yinit\n");
+
+        /* Initialize for 1Gbps, Full Duplex and 125 MHz */
+        set_full_duplex();
+        set_gmii_speed();
+        ntn_set_tx_clk_125MHz();
+
+        /* reset mmc counters */
+        MMC_CNTRL_RgWr(0x1);
+
+        for (qInx = 0; qInx < NTN_TX_QUEUE_CNT; qInx++) {
+                if(!pdata->tx_q_for_host[qInx])
+                        continue;
+                configure_mtl_queue(qInx, pdata);
+        }
+
+
+#ifdef DWC_ETH_QOS_CERTIFICATION_PKTBURSTCNT
+        /* enable tx drop status */
+        MTL_OMR_DTXSTS_UdfWr(0x1);
+#endif
+
+        configure_mac(pdata);
+
+        DMA_BUSCFG_RgWr(0x0);
+
+        for (chInx = 0; chInx < NTN_TX_DMA_CH_CNT; chInx++) {
+
+                if(!pdata->tx_dma_ch_for_host[chInx])
+                        continue;
+
+                configure_dma_tx_channel(chInx, pdata);
+        }
+        for (chInx = 0; chInx < NTN_RX_DMA_CH_CNT; chInx++) {
+
+                if(!pdata->rx_dma_ch_for_host[chInx])
+                        continue;
+
+                configure_dma_rx_channel(chInx, pdata);
+        }
+
+#ifdef DWC_ETH_QOS_CERTIFICATION_PKTBURSTCNT_HALFDUPLEX
+        MTL_Q0ROMR_FEP_UdfWr(0x1);
+        MAC_MPFR_RA_UdfWr(0x1);
+        MAC_MCR_BE_UdfWr(0x1);
+#endif
+
+        MAC_MPFR_RA_UdfWr(0x1);
+        MAC_MPFR_HPF_UdfWr(0x1);
+
+        DBGPR("<--DWC_ETH_QOS_yinit\n");
+
+        return Y_SUCCESS;
+}
 
 /*!
 * \brief API to initialize the function pointers.

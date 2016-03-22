@@ -72,6 +72,7 @@
 
 /*! History:   
  *      2-March-2016 : Initial 
+ *     21-March-2016 : Added declaration for "DWC_ETH_QOS_config_phy_aneg"
  */
 
 #ifndef __DWC_ETH_QOS_DRV_H__
@@ -169,6 +170,8 @@ int DWC_ETH_QOS_poll(struct DWC_ETH_QOS_prv_data *pdata, int budget, int chInx);
 
 static void DWC_ETH_QOS_mmc_setup(struct DWC_ETH_QOS_prv_data *pdata);
 inline unsigned int DWC_ETH_QOS_reg_read(volatile ULONG *ptr);
+
+static INT DWC_ETH_QOS_config_phy_aneg (struct DWC_ETH_QOS_prv_data *pdata, unsigned int enb_dis, unsigned int restart);
 
 #ifdef DWC_ETH_QOS_QUEUE_SELECT_ALGO
 u16	DWC_ETH_QOS_select_queue(struct net_device *dev, struct sk_buff *skb);

@@ -72,6 +72,7 @@
 
 /*! History:   
  *      2-March-2016 : Initial 
+ *     21-March-2016 : Added "DWC_ETH_QOS_config_phy_aneg" API and it's calls
  */
 
 /*!@file: DWC_ETH_QOS_drv.c
@@ -1750,6 +1751,34 @@ static void DWC_ETH_QOS_default_rx_confs(struct DWC_ETH_QOS_prv_data *pdata)
 	DBGPR("<--DWC_ETH_QOS_default_rx_confs\n");
 }
 
+/*!
+ *  \brief Disable Standard PHY ANEG (BMCR:)
+ *  \details
+ * 
+ *  \param[in] enb_dis
+ *  \return Success or Failure
+ *  \retval  0 Success
+ *  \retval -1 Failure
+ */
+
+static INT DWC_ETH_QOS_config_phy_aneg (struct DWC_ETH_QOS_prv_data *pdata, unsigned int enb_dis, unsigned int restart) {
+	int regval;
+
+	enb_dis = !!enb_dis;
+	restart = !!restart;
+	DBGPR("-->DWC_ETH_QOS_config_phy_aneg: %s, %s\n",(enb_dis ? "Enable" : "Disable"),(restart ? "Restart" : "No Restart"));
+
+	DWC_ETH_QOS_mdio_read_direct(pdata, pdata->phyaddr, MII_BMCR, &regval);
+	regval &= ~(BMCR_ANENABLE | BMCR_ANRESTART);
+	if(enb_dis)
+		regval |= BMCR_ANENABLE;
+	if(restart)
+		regval |= BMCR_ANRESTART;
+	DWC_ETH_QOS_mdio_write_direct(pdata, pdata->phyaddr, MII_BMCR, regval);
+
+	return Y_SUCCESS;
+}
+
 
 /*!
 * \brief API to open a deivce for data transmission & reception.
@@ -1807,10 +1836,12 @@ static int DWC_ETH_QOS_open(struct net_device *dev)
 	DWC_ETH_QOS_default_tx_confs(pdata);
 	DWC_ETH_QOS_default_rx_confs(pdata);
 	DWC_ETH_QOS_configure_rx_fun_ptr(pdata);
-
+        
 	DWC_ETH_QOS_napi_enable_mq(pdata);
 
 	DWC_ETH_QOS_set_rx_mode(dev);
+
+	DWC_ETH_QOS_config_phy_aneg(pdata, 0, 0);
 
 	desc_if->wrapper_tx_desc_init(pdata);
 	desc_if->wrapper_rx_desc_init(pdata);
@@ -1824,8 +1855,7 @@ static int DWC_ETH_QOS_open(struct net_device *dev)
 	hw_if->init(pdata);
 
 
-	if (pdata->hw_feat.pcs_sel)
-		hw_if->control_an(1, 0);
+    DWC_ETH_QOS_config_phy_aneg(pdata, 1, 0);
 
 	if (pdata->phydev)
 		phy_start(pdata->phydev);
@@ -2307,9 +2337,6 @@ static int DWC_ETH_QOS_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	UINT avb_priority;
 	UINT eth_type;
 
-	DBGPR("-->DWC_ETH_QOS_start_xmit: skb->len = %d, chInx = %u\n",
-		skb->len, chInx);
-
 	spin_lock_irqsave(&pdata->tx_lock, flags);
 
 	/* TX Channel assignment based on Vlan tag and protocol type */	
@@ -2356,6 +2383,8 @@ static int DWC_ETH_QOS_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	chInx = skb_get_queue_mapping(skb);
 	desc_data = GET_TX_WRAPPER_DESC(chInx);
 
+	DBGPR("-->DWC_ETH_QOS_start_xmit: skb->len = %d, chInx = %u\n",
+		skb->len, chInx);
 
 	if (skb->len <= 0) 	
 	{
