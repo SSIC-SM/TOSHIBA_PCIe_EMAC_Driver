@@ -24,6 +24,8 @@ endif
 
 obj-m := DWC_ETH_QOS.o
 
+SRC := $(shell pwd)
+
 DWC_ETH_QOS-y += DWC_ETH_QOS_dev.o \
 			DWC_ETH_QOS_drv.o \
 			DWC_ETH_QOS_desc.o \
@@ -35,7 +37,12 @@ DWC_ETH_QOS-y += DWC_ETH_QOS_dev.o \
 DWC_ETH_QOS-$(CONFIG_PTPSUPPORT_OBJ) += DWC_ETH_QOS_ptp.o
 
 all:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC)
+
+modules_install:
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
+	rm -f Module.markers Module.symvers modules.order
+	rm -rf .tmp_versions Modules.symvers
