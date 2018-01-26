@@ -608,7 +608,12 @@ static int DWC_ETH_QOS_probe(struct pci_dev *pdev,
 				(64 * NTN_RX_DMA_CH_CNT));
 	}
 
+#if ( LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0) )
 	SET_ETHTOOL_OPS(dev, DWC_ETH_QOS_get_ethtool_ops());
+#else	//3.16.0
+	netdev_set_default_ethtool_ops(dev, DWC_ETH_QOS_get_ethtool_ops());
+#endif	//3.16.0
+
 	if (pdata->hw_feat.tso_en) {
 		dev->hw_features = NETIF_F_TSO;
 		dev->hw_features |= NETIF_F_SG;
