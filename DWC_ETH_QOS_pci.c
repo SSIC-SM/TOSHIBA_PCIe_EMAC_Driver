@@ -82,6 +82,11 @@
 #include "DWC_ETH_QOS_yheader.h"
 #include "DWC_ETH_QOS_pci.h"
 
+/* Kernel firmware interface */
+#include <linux/firmware.h>
+/* NTN register access */
+#include "DWC_ETH_QOS_yregacc.h"
+
 static UCHAR dev_addr[6] = { 0xE8, 0xE0, 0xB7, 0xB5, 0x7D, 0xF8};   
 typedef struct
 {
@@ -567,6 +572,15 @@ static int DWC_ETH_QOS_probe(struct pci_dev *pdev,
     //  Only one MSI supported for now.   
 	dev->irq = pdev->irq;
         NDBGPR_L1( "Allocated IRQ Number = %d\n", dev->irq); 
+
+	/* Load NTN firmware */
+	ret = DWC_ETH_QOS_load_ntn_firmware(pdev);
+	if (0 != ret) {
+		/* error handling */
+	        NMSGPR_ALERT( "ERROR: Unable to load NTN firmware\n");
+		goto err_out_msi_failed;
+
+	}
 
 	DWC_ETH_QOS_get_all_hw_features(pdata);
 	DWC_ETH_QOS_print_all_hw_features(pdata);
@@ -1055,3 +1069,63 @@ MODULE_DESCRIPTION("Neutrino Driver");
 * \details This macro is used to describe the module license.
 */
 MODULE_LICENSE("GPL");
+
+/*!
+* \brief Load NTN firmware from binary file into SRAM using kernel firmware
+* interface.
+*
+* \details This function performs following steps:
+* \  - Check if host initiated boot mode is selected by mode option.
+* \  - Assert NTN Cortex M3 system reset.
+* \  - Copies NTN firmware from a binary file into SRAM.
+* \  - De-assert NTN Cortex M3 cold and system reset.
+*
+* \param[in] pdev - pointer to pci_dev structure.
+*
+* \return integer
+*
+* \retval 0 on success & -ve number on failure.
+*/
+static int DWC_ETH_QOS_load_ntn_firmware(struct pci_dev *pdev) {
+	ULONG reg_val;
+	const struct firmware *pfw = NULL;
+ 
+	NMSGPR_ALERT("DWC_ETH_QOS: Start firmware load");
+ 
+	/* Check for host initiated boot mode */
+	NTN_NMODESTS_RgRd(reg_val);
+	if ( (reg_val & 0x40) != 0x40 ) {
+		NMSGPR_ALERT("DWC_ETH_QOS: NMODESTS=0x%X => Boot from flash, firmware won't be loaded by the driver", (unsigned int)reg_val);
+		return -EINVAL;
+	}
+ 
+	/* Get NTN FW binary through kernel firmware interface request */
+	if (request_firmware(&pfw, "fw_OSLess_HWSeq_emac_tdm_can_v2.4.bin", &pdev->dev) != 0) {
+		NMSGPR_ALERT("DWC_ETH_QOS: Error in calling request_firmware");
+		return -EINVAL;
+	}
+	if (pfw == NULL) {
+		NMSGPR_ALERT("DWC_ETH_QOS: request_firmware: pfw == NULL");
+		return -EINVAL;
+	}
+ 
+	/* Read current value of NRSTCTRL register */
+	NTN_NRSTCTRL_RgRd(reg_val);
+ 
+	/* Assert NTN CM3 system reset (NRSTCTRL.MCU0RST) */
+	NTN_NRSTCTRL_RgWr(reg_val | 1);
+ 
+	/* Copy NTN FW to SRAM */
+	memcpy((char*)dwc_eth_ntn_SRAM_pci_base_addr_virt, pfw->data, pfw->size);
+ 
+	/* De-assert NTN CM3 cold and system reset (NRSTCTRL.MCU1RST and NRSTCTRL.MCU0RST) */
+	NTN_NRSTCTRL_RgWr(reg_val & ~0x3);
+ 
+	/* Release kernel firmware interface */
+	release_firmware(pfw);
+ 
+	NMSGPR_ALERT("DWC_ETH_QOS: Firmware loaded");
+ 
+	return 0;
+} 
+

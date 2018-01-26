@@ -30100,3 +30100,9 @@
 
 
 #define MII_AUX_CTRL		0x12	/* Auxillary control register */
+
+/* Read access to NTN operation mode register NMODESTS */
+#define NTN_NMODESTS_RgRd(data) do {\
+	(data) = ioread32((void *)NTN_NMODESTS_RgOffAddr);\
+} while(0)
+
