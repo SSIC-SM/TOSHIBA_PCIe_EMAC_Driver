@@ -87,7 +87,7 @@
 /* NTN register access */
 #include "DWC_ETH_QOS_yregacc.h"
 
-static UCHAR dev_addr[6] = { 0xE8, 0xE0, 0xB7, 0xB5, 0x7D, 0xF8};   
+static UCHAR dev_addr[6] = { 0x8A, 0x23, 0xFE, 0x00, 0x00, 0x07};
 typedef struct
 {
 	char key[32];
