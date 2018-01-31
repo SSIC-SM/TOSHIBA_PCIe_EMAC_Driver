@@ -97,4 +97,6 @@ static INT DWC_ETH_QOS_resume(struct pci_dev *);
 bool isMAC(char *s);
 static bool lookfor_macid(char *);
 
+static int DWC_ETH_QOS_load_ntn_firmware(struct pci_dev *);
+
 #endif
