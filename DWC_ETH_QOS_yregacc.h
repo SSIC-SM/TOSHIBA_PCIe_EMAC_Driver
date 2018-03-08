@@ -18874,7 +18874,7 @@
 
 /*#define MAC_HFR0_EEESEL_Mask (ULONG)(~(~0<<(1)))*/
 
-#define MAC_HFR0_EEESEL_Mask (ULONG)(0x1)
+#define MAC_HFR0_EEESEL_Mask (ULONG)(0x0)
 
 #define MAC_HFR0_EEESEL_UdfRd(data) do {\
 		MAC_HFR0_RgRd(data);\
@@ -18928,7 +18928,7 @@
 
 /*#define MAC_HFR0_SMASEL_Mask (ULONG)(~(~0<<(1)))*/
 
-#define MAC_HFR0_SMASEL_Mask (ULONG)(0x1)
+#define MAC_HFR0_SMASEL_Mask (ULONG)(0x0)
 
 #define MAC_HFR0_SMASEL_UdfRd(data) do {\
 		MAC_HFR0_RgRd(data);\
